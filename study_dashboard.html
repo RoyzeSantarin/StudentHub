@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        nothing: {
+                            bg: '#0a0d0a',
+                            card: '#121613',
+                            cardMuted: '#1a201b',
+                            border: '#263428',
+                            borderHover: '#4caf50',
+                            text: '#e2f0e4',
+                            muted: '#7a967f',
+                            accent: '#4caf50',
+                            mint: '#81c784',
+                            softMint: '#1b3320',
+                            highlight: '#66bb6a'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['"Courier New"', 'Courier', 'monospace', 'system-ui']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Identity Services SDK for Google Drive OAuth -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        /* Nothing OS Aesthetic - Dark Mint / Matte Black Palette */
+        body {
+            background-color: #0a0d0a;
+            color: #e2f0e4;
+            font-family: 'Courier New', Courier, monospace;
+            letter-spacing: -0.025em;
+        }
+        .dot-matrix-bg {
+            background-image: radial-gradient(#1e2b20 1.2px, transparent 1.2px);
+            background-size: 20px 20px;
+        }
+        .nothing-border {
+            border: 1px solid #263428;
+            transition: all 0.2s ease-in-out;
+        }
+        .nothing-border:hover {
+            border-color: #4caf50;
+        }
+        .nothing-border-active {
+            border: 1px solid #e2f0e4;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #121613;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #263428;
+            border-radius: 2px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4caf50;
+        }
+        /* Dark filter for calendar iframe */
+        .dark-calendar-iframe {
+            filter: invert(0.9) hue-rotate(140deg);
+        }
+    </style>
+</head>
+<body class="dot-matrix-bg min-h-screen flex flex-col selection:bg-nothing-accent selection:text-black">
+
+    <!-- Top Navigation Header -->
+    <header class="w-full border-b border-nothing-border bg-nothing-bg/95 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            
+            <!-- Brand Logo / Title -->
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('home')">
+                <div class="w-3 h-3 bg-nothing-accent rounded-full animate-pulse"></div>
+                <span class="font-bold tracking-widest text-sm sm:text-base uppercase text-nothing-text">
+                    Study dashboard
+                </span>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <nav class="hidden md:flex items-center space-x-1">
+                <button onclick="switchTab('home')" id="tab-btn-home" class="tab-btn px-4 py-2 text-xs uppercase tracking-wider transition-all border border-nothing-accent text-black bg-nothing-accent font-bold shadow-sm">
+                    [01] Home
+                </button>
+                <button onclick="switchTab('assignments')" id="tab-btn-assignments" class="tab-btn px-4 py-2 text-xs uppercase tracking-wider transition-all border border-transparent hover:border-nothing-border text-nothing-muted">
+                    [02] Assignments
+                </button>
+                <button onclick="switchTab('calendar')" id="tab-btn-calendar" class="tab-btn px-4 py-2 text-xs uppercase tracking-wider transition-all border border-transparent hover:border-nothing-border text-nothing-muted">
+                    [03] Calendar
+                </button>
+                <button onclick="switchTab('notes')" id="tab-btn-notes" class="tab-btn px-4 py-2 text-xs uppercase tracking-wider transition-all border border-transparent hover:border-nothing-border text-nothing-muted">
+                    [04] Notes
+                </button>
+                <button onclick="switchTab('files')" id="tab-btn-files" class="tab-btn px-4 py-2 text-xs uppercase tracking-wider transition-all border border-transparent hover:border-nothing-border text-nothing-muted">
+                    [05] Study Files
+                </button>
+            </nav>
+
+            <!-- System Status / Live Clock -->
+            <div class="hidden lg:flex items-center space-x-4 text-xs text-nothing-muted">
+                <div class="flex items-center space-x-2 bg-nothing-cardMuted px-3 py-1 rounded border border-nothing-border">
+                    <span class="w-2 h-2 bg-nothing-accent rounded-full"></span>
+                    <span id="live-clock" class="font-bold font-mono text-nothing-text">00:00:00</span>
+                </div>
+            </div>
+
+            <!-- Mobile Menu Toggle -->
+            <button onclick="toggleMobileMenu()" class="md:hidden text-nothing-text p-2 border nothing-border bg-nothing-card">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
+
+        <!-- Mobile Navigation Dropdown -->
+        <div id="mobile-menu" class="hidden md:hidden border-t border-nothing-border bg-nothing-bg px-4 py-3 space-y-2">
+            <button onclick="switchTab('home'); toggleMobileMenu();" class="block w-full text-left px-3 py-2 text-xs uppercase tracking-wider text-black bg-nothing-accent font-bold">
+                [01] Home
+            </button>
+            <button onclick="switchTab('assignments'); toggleMobileMenu();" class="block w-full text-left px-3 py-2 text-xs uppercase tracking-wider text-nothing-muted">
+                [02] Assignments
+            </button>
+            <button onclick="switchTab('calendar'); toggleMobileMenu();" class="block w-full text-left px-3 py-2 text-xs uppercase tracking-wider text-nothing-muted">
+                [03] Calendar
+            </button>
+            <button onclick="switchTab('notes'); toggleMobileMenu();" class="block w-full text-left px-3 py-2 text-xs uppercase tracking-wider text-nothing-muted">
+                [04] Notes
+            </button>
+            <button onclick="switchTab('files'); toggleMobileMenu();" class="block w-full text-left px-3 py-2 text-xs uppercase tracking-wider text-nothing-muted">
+                [05] Study Files
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6">
+
+        <!-- ================= HOME TAB ================= -->
+        <section id="tab-home" class="tab-content space-y-6">
+            <!-- Hero Banner -->
+            <div class="nothing-border bg-nothing-card p-6 sm:p-8 relative overflow-hidden shadow-sm">
+                <div class="absolute -right-6 -bottom-6 opacity-10 text-8xl font-bold select-none pointer-events-none text-nothing-accent">
+                    01
+                </div>
+                <div class="max-w-3xl relative z-10">
+                    <div class="inline-flex items-center space-x-2 px-3 py-1 bg-nothing-softMint border border-nothing-border text-xs text-nothing-accent font-bold mb-4 rounded-full">
+                        <span class="w-2 h-2 bg-nothing-accent rounded-full animate-ping"></span>
+                        <span>SYSTEM ACTIVE // DARK MODE</span>
+                    </div>
+                    <h1 class="text-3xl sm:text-5xl font-bold uppercase tracking-tight text-nothing-text mb-3">
+                        Hello, Royze!
+                    </h1>
+                    <p class="text-nothing-muted text-sm sm:text-base leading-relaxed font-mono">
+                        Welcome back. Access your cloud files, manage assignments, and stay ahead with tasks.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Dashboard Stats Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="nothing-border bg-nothing-card p-4 flex flex-col justify-between">
+                    <span class="text-[11px] text-nothing-muted uppercase tracking-wider">[PENDING TASKS]</span>
+                    <div class="mt-2 flex items-baseline justify-between">
+                        <span id="dash-stat-tasks" class="text-2xl font-bold text-nothing-text">0</span>
+                        <i class="fa-solid fa-list-check text-nothing-muted"></i>
+                    </div>
+                </div>
+
+                <div class="nothing-border bg-nothing-card p-4 flex flex-col justify-between">
+                    <span class="text-[11px] text-nothing-muted uppercase tracking-wider">[SAVED NOTES]</span>
+                    <div class="mt-2 flex items-baseline justify-between">
+                        <span id="dash-stat-notes" class="text-2xl font-bold text-nothing-text">0</span>
+                        <i class="fa-regular fa-note-sticky text-nothing-muted"></i>
+                    </div>
+                </div>
+
+                <div class="nothing-border bg-nothing-card p-4 flex flex-col justify-between">
+                    <span class="text-[11px] text-nothing-muted uppercase tracking-wider">[CLOUD VAULT]</span>
+                    <div class="mt-2 flex items-baseline justify-between">
+                        <span id="dash-stat-files" class="text-2xl font-bold text-nothing-text">0</span>
+                        <i class="fa-solid fa-cloud-arrow-up text-nothing-muted"></i>
+                    </div>
+                </div>
+
+                <div class="nothing-border bg-nothing-card p-4 flex flex-col justify-between">
+                    <span class="text-[11px] text-nothing-muted uppercase tracking-wider">[UPCOMING EVENTS]</span>
+                    <div class="mt-2 flex items-baseline justify-between">
+                        <span id="dash-stat-events" class="text-2xl font-bold text-nothing-text">2</span>
+                        <i class="fa-regular fa-calendar-check text-nothing-muted"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Widgets Section -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Assignments Preview -->
+                <div class="nothing-border bg-nothing-card p-5 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-4 border-b border-nothing-border pb-3">
+                            <span class="text-xs font-bold uppercase text-nothing-text tracking-wider">[NEXT DEADLINES]</span>
+                            <span onclick="switchTab('assignments')" class="text-[10px] text-nothing-accent font-bold cursor-pointer hover:underline">VIEW ALL</span>
+                        </div>
+                        <div id="dash-task-list" class="space-y-2 text-xs text-nothing-muted mb-4">
+                            <p class="italic">No pending tasks recorded.</p>
+                        </div>
+                    </div>
+                    <button onclick="switchTab('assignments')" class="w-full py-2 bg-nothing-cardMuted border nothing-border text-xs uppercase text-nothing-text font-bold hover:bg-nothing-accent hover:text-black transition-all">
+                        + Add Assignment
+                    </button>
+                </div>
+
+                <!-- Notes Quick Access -->
+                <div class="nothing-border bg-nothing-card p-5 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-4 border-b border-nothing-border pb-3">
+                            <span class="text-xs font-bold uppercase text-nothing-text tracking-wider">[RECENT NOTE]</span>
+                            <span onclick="switchTab('notes')" class="text-[10px] text-nothing-accent font-bold cursor-pointer hover:underline">OPEN SCRATCHPAD</span>
+                        </div>
+                        <div id="dash-recent-note" class="text-xs text-nothing-muted mb-4 leading-relaxed bg-nothing-cardMuted p-3 border nothing-border rounded">
+                            <p class="italic">No notes created yet.</p>
+                        </div>
+                    </div>
+                    <button onclick="switchTab('notes')" class="w-full py-2 bg-nothing-cardMuted border nothing-border text-xs uppercase text-nothing-text font-bold hover:bg-nothing-accent hover:text-black transition-all">
+                        Create New Note
+                    </button>
+                </div>
+
+                <!-- Cloud Files Quick Access -->
+                <div class="nothing-border bg-nothing-card p-5 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-4 border-b border-nothing-border pb-3">
+                            <span class="text-xs font-bold uppercase text-nothing-text tracking-wider">[FILE STORAGE]</span>
+                            <span onclick="switchTab('files')" class="text-[10px] text-nothing-accent font-bold cursor-pointer hover:underline">GO TO VAULT</span>
+                        </div>
+                        <div id="dash-recent-files" class="space-y-2 text-xs text-nothing-muted mb-4">
+                            <p class="italic">Vault empty.</p>
+                        </div>
+                    </div>
+                    <button onclick="switchTab('files')" class="w-full py-2 bg-nothing-cardMuted border nothing-border text-xs uppercase text-nothing-text font-bold hover:bg-nothing-accent hover:text-black transition-all">
+                        Upload Files →
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= ASSIGNMENTS TAB ================= -->
+        <section id="tab-assignments" class="tab-content hidden space-y-6">
+            <div class="nothing-border bg-nothing-card p-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-nothing-border pb-4">
+                    <div>
+                        <h2 class="text-xl font-bold uppercase tracking-tight text-nothing-text">[02] ASSIGNMENTS MANAGER</h2>
+                        <p class="text-xs text-nothing-muted mt-1">Organize coursework with subjects, priority status, and due dates.</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="filterAssignments('all')" id="filter-all" class="px-3 py-1 text-xs border border-nothing-accent text-black bg-nothing-accent font-bold uppercase">All</button>
+                        <button onclick="filterAssignments('pending')" id="filter-pending" class="px-3 py-1 text-xs border nothing-border text-nothing-muted uppercase hover:bg-nothing-cardMuted">Pending</button>
+                        <button onclick="filterAssignments('completed')" id="filter-completed" class="px-3 py-1 text-xs border nothing-border text-nothing-muted uppercase hover:bg-nothing-cardMuted">Completed</button>
+                    </div>
+                </div>
+
+                <!-- Add Assignment Form -->
+                <form id="assignment-form" onsubmit="addAssignment(event)" class="grid grid-cols-1 sm:grid-cols-6 gap-3 mb-6 bg-nothing-cardMuted p-4 border nothing-border rounded">
+                    <input type="text" id="assignment-title" placeholder="Assignment task..." required
+                        class="bg-nothing-bg border nothing-border px-3 py-2 text-xs text-nothing-text placeholder-nothing-muted focus:outline-none focus:border-nothing-accent sm:col-span-2">
+                    
+                    <input type="text" id="assignment-subject" placeholder="Subject (e.g. MATH 101)" required
+                        class="bg-nothing-bg border nothing-border px-3 py-2 text-xs text-nothing-text placeholder-nothing-muted focus:outline-none focus:border-nothing-accent">
+                    
+                    <select id="assignment-priority" class="bg-nothing-bg border nothing-border px-3 py-2 text-xs text-nothing-text focus:outline-none focus:border-nothing-accent">
+                        <option value="Normal">Normal Priority</option>
+                        <option value="High">High Priority</option>
+                        <option value="Low">Low Priority</option>
+                    </select>
+
+                    <input type="date" id="assignment-date" required
+                        class="bg-nothing-bg border nothing-border px-3 py-2 text-xs text-nothing-text focus:outline-none focus:border-nothing-accent">
+                    
+                    <button type="submit" class="bg-nothing-accent text-black font-bold text-xs uppercase py-2 px-4 hover:bg-white transition-colors">
+                        + Add Task
+                    </button>
+                </form>
+
+                <!-- Assignments List -->
+                <div id="assignments-list" class="space-y-3">
+                    <!-- Injected Task Items -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= CALENDAR TAB ================= -->
+        <section id="tab-calendar" class="tab-content hidden space-y-6">
+            <div class="nothing-border bg-nothing-card p-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-nothing-border pb-4">
+                    <div>
+                        <h2 class="text-xl font-bold uppercase tracking-tight text-nothing-text">[03] GOOGLE CALENDAR & SCHEDULE</h2>
+                        <p class="text-xs text-nothing-muted mt-1">Synchronized schedule, lectures, and upcoming exam dates.</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="updateCalendarEmbed()" class="px-3 py-1 text-xs border nothing-border text-nothing-text bg-nothing-cardMuted hover:bg-nothing-accent hover:text-black transition-all uppercase font-bold">
+                            <i class="fa-solid fa-link mr-1"></i> Change Calendar URL
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Google Calendar View -->
+                    <div class="lg:col-span-2 w-full h-[550px] border nothing-border bg-black relative overflow-hidden rounded">
+                        <iframe id="google-calendar-iframe" 
+                            src="https://calendar.google.com/calendar/embed?src=en.usa%23holiday%40group.v.calendar.google.com&ctz=UTC" 
+                            style="border: 0" width="100%" height="100%" frameborder="0" scrolling="no"
+                            class="w-full h-full opacity-90 dark-calendar-iframe">
+                        </iframe>
+                    </div>
+
+                    <!-- Quick Event Planner Sidebar -->
+                    <div class="lg:col-span-1 border nothing-border bg-nothing-cardMuted p-4 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xs font-bold uppercase text-nothing-text border-b border-nothing-border pb-2 mb-3">
+                                [QUICK EVENT SCHEDULER]
+                            </h3>
+                            <form onsubmit="addCalendarEvent(event)" class="space-y-3 mb-4">
+                                <input type="text" id="event-title" placeholder="Event name (e.g. Bio Exam)" required
+                                    class="w-full bg-nothing-bg border nothing-border px-3 py-2 text-xs text-nothing-text placeholder-nothing-muted focus:outline-none">
+                                <input type="time" id="event-time" required
+                                    class="w-full bg-nothing-bg border nothing-border px-3 py-2 text-xs text-nothing-text focus:outline-none">
+                                <button type="submit" class="w-full bg-nothing-accent text-black text-xs font-bold uppercase py-2 hover:bg-white transition-colors">
+                                    + Add Schedule Event
+                                </button>
+                            </form>
+                            
+                            <span class="text-[11px] font-bold text-nothing-muted uppercase">Today's Schedule:</span>
+                            <div id="events-list" class="mt-2 space-y-2 text-xs">
+                                <!-- Dynamic events list -->
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-nothing-muted mt-4 border-t border-nothing-border pt-2">
+                            Tip: You can embed any personal Google Calendar by pasting its embed URL above.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= NOTES TAB ================= -->
+        <section id="tab-notes" class="tab-content hidden space-y-6">
+            <div class="nothing-border bg-nothing-card p-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-nothing-border pb-4">
+                    <div>
+                        <h2 class="text-xl font-bold uppercase tracking-tight text-nothing-text">[04] MINIMALIST NOTES SCRATCHPAD</h2>
+                        <p class="text-xs text-nothing-muted mt-1">Capture lecture ideas, formula reference cards, and study notes.</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="createNewNote()" class="px-4 py-2 bg-nothing-accent text-black text-xs font-bold uppercase hover:bg-white transition-colors shadow-sm">
+                            + New Note
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Note Sidebar List -->
+                    <div class="md:col-span-1 border nothing-border bg-nothing-cardMuted p-3 space-y-2 max-h-[520px] overflow-y-auto">
+                        <input type="text" id="note-search" placeholder="Search notes..." oninput="renderNotesSidebar()"
+                            class="w-full bg-nothing-bg border nothing-border px-3 py-1.5 text-xs text-nothing-text placeholder-nothing-muted focus:outline-none mb-2">
+                        <div id="notes-sidebar-items" class="space-y-2">
+                            <!-- Note list items -->
+                        </div>
+                    </div>
+
+                    <!-- Note Editor Area -->
+                    <div class="md:col-span-2 border nothing-border bg-nothing-bg p-5 flex flex-col h-[520px] shadow-sm">
+                        <input type="text" id="note-title-input" placeholder="Note Title..." oninput="autoSaveCurrentNote()"
+                            class="bg-transparent border-b border-nothing-border pb-2 text-sm font-bold text-nothing-text placeholder-nothing-muted focus:outline-none focus:border-nothing-accent mb-4">
+                        <textarea id="note-body-input" placeholder="Start typing your study notes here..." oninput="autoSaveCurrentNote()"
+                            class="w-full flex-1 bg-transparent text-xs text-nothing-text placeholder-nothing-muted resize-none focus:outline-none leading-relaxed font-mono"></textarea>
+                        
+                        <div class="flex justify-between items-center pt-3 border-t border-nothing-border text-[11px] text-nothing-muted mt-2">
+                            <span id="note-save-status" class="italic">Saved to browser storage</span>
+                            <button onclick="deleteCurrentNote()" class="text-red-400 hover:text-red-300 uppercase font-bold text-[10px]">
+                                Delete Note
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= STUDY FILES TAB ================= -->
+        <section id="tab-files" class="tab-content hidden space-y-6">
+            <div class="nothing-border bg-nothing-card p-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-nothing-border pb-4">
+                    <div>
+                        <h2 class="text-xl font-bold uppercase tracking-tight text-nothing-text flex items-center space-x-2">
+                            <i class="fa-brands fa-google-drive text-nothing-accent"></i>
+                            <span>[05] GOOGLE DRIVE STUDY REPOSITORY</span>
+                        </h2>
+                        <p class="text-xs text-nothing-muted mt-1">Upload and access your study files directly in your Google Drive across all devices.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="openGDriveConfigModal()" class="px-3 py-1.5 border nothing-border text-xs text-nothing-muted hover:text-nothing-text hover:bg-nothing-cardMuted rounded font-bold uppercase transition-all">
+                            <i class="fa-solid fa-gear mr-1"></i> API Settings
+                        </button>
+                        <button id="gdrive-connect-btn" onclick="connectGoogleDrive()" class="px-4 py-1.5 bg-nothing-accent text-black text-xs font-bold uppercase hover:bg-white transition-all rounded shadow-sm flex items-center space-x-2">
+                            <i class="fa-brands fa-google-drive"></i>
+                            <span id="gdrive-btn-text">Connect Google Drive</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Google Drive Sync Status Banner -->
+                <div id="gdrive-status-banner" class="mb-6 p-4 border border-nothing-border bg-nothing-cardMuted rounded flex items-center justify-between text-xs">
+                    <div class="flex items-center space-x-3">
+                        <div id="gdrive-status-dot" class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                        <div>
+                            <span id="gdrive-status-title" class="font-bold text-nothing-text uppercase">Google Drive Unlinked</span>
+                            <p id="gdrive-status-desc" class="text-nothing-muted text-[11px] mt-0.5">Files are currently stored in local browser cache. Click "Connect Google Drive" to sync with your cloud storage.</p>
+                        </div>
+                    </div>
+                    <a href="https://drive.google.com" target="_blank" rel="noopener noreferrer" class="hidden sm:inline-flex items-center space-x-1 text-nothing-accent hover:underline font-bold text-[11px] uppercase">
+                        <span>Open Drive</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                    </a>
+                </div>
+
+                <!-- Drag and Dropzone -->
+                <div id="dropzone" class="border-2 border-dashed border-nothing-border p-8 text-center bg-nothing-cardMuted hover:border-nothing-accent transition-all cursor-pointer relative mb-6 rounded">
+                    <input type="file" id="file-input" multiple onchange="handleFileUpload(this.files)" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+                    <div class="space-y-2 pointer-events-none">
+                        <div class="w-10 h-10 bg-nothing-softMint border border-nothing-border rounded-full flex items-center justify-center mx-auto text-nothing-accent">
+                            <i class="fa-brands fa-google-drive text-xl"></i>
+                        </div>
+                        <p class="text-xs uppercase text-nothing-text font-bold">Drag and drop files here to upload to Google Drive</p>
+                        <p class="text-[11px] text-nothing-muted">Supports PDF, DOCX, TXT, PNG, JPG, ZIP & Lecture slides</p>
+                    </div>
+                </div>
+
+                <!-- Files Table -->
+                <div class="border nothing-border bg-nothing-bg overflow-x-auto shadow-sm rounded">
+                    <table class="w-full text-left text-xs">
+                        <thead class="border-b border-nothing-border text-nothing-muted uppercase text-[10px] bg-nothing-cardMuted">
+                            <tr>
+                                <th class="p-3">File Name</th>
+                                <th class="p-3">Size</th>
+                                <th class="p-3">Uploaded Date</th>
+                                <th class="p-3">Storage Destination</th>
+                                <th class="p-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cloud-files-tbody" class="divide-y divide-nothing-border">
+                            <!-- Dynamic File Rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Google Drive Configuration Modal -->
+        <div id="gdrive-config-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+            <div class="bg-nothing-card border-2 border-nothing-accent p-6 rounded-xl max-w-md w-full space-y-4 shadow-2xl">
+                <div class="flex justify-between items-center border-b border-nothing-border pb-3">
+                    <h3 class="font-bold text-sm uppercase text-nothing-text flex items-center space-x-2">
+                        <i class="fa-brands fa-google-drive text-nothing-accent"></i>
+                        <span>Google Drive API Settings</span>
+                    </h3>
+                    <button onclick="closeGDriveConfigModal()" class="text-nothing-muted hover:text-nothing-text text-sm">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <p class="text-xs text-nothing-muted leading-relaxed">
+                    To link your own Google Cloud OAuth Client ID, paste it below. If left blank, standard Google Identity popup authentication will be requested.
+                </p>
+
+                <div>
+                    <label class="block text-[11px] uppercase font-bold text-nothing-muted mb-1">OAuth Client ID (Optional)</label>
+                    <input type="text" id="gdrive-client-id-input" placeholder="e.g. 123456789-xyz.apps.googleusercontent.com"
+                        class="w-full bg-nothing-bg border nothing-border px-3 py-2 text-xs text-nothing-text focus:outline-none focus:border-nothing-accent rounded">
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-2">
+                    <button onclick="closeGDriveConfigModal()" class="px-4 py-2 text-xs border nothing-border text-nothing-muted uppercase hover:bg-nothing-cardMuted rounded">Cancel</button>
+                    <button onclick="saveGDriveConfig()" class="px-4 py-2 text-xs bg-nothing-accent text-black font-bold uppercase hover:bg-white rounded transition-colors">Save Settings</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat History Container -->
+        <div id="gemini-chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 text-xs leading-relaxed font-mono">
+            <div class="bg-nothing-softMint border border-nothing-border p-3 rounded-lg text-nothing-text">
+                <p class="font-bold text-nothing-accent mb-1">[GEMINI AI]</p>
+                <p>Hello Royze! I'm your embedded Gemini study assistant. Ask me anything about your coursework, assignments, notes, or code!</p>
+            </div>
+        </div>
+
+        <!-- Input Form Footer -->
+        <form onsubmit="sendGeminiMessage(event)" class="p-3 bg-nothing-bg border-t border-nothing-border flex items-center space-x-2">
+            <input type="text" id="gemini-user-input" placeholder="Ask Gemini..." autocomplete="off"
+                class="flex-1 bg-nothing-cardMuted border nothing-border px-3 py-2 text-xs text-nothing-text placeholder-nothing-muted focus:outline-none focus:border-nothing-accent rounded-lg">
+            <button type="submit" id="gemini-send-btn" class="bg-nothing-accent text-black font-bold px-3 py-2 text-xs uppercase rounded-lg hover:bg-white transition-colors">
+                <i class="fa-solid fa-paper-plane"></i>
+            </button>
+        </form>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // --- LIVE CLOCK ---
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('live-clock').innerText = now.toTimeString().split(' ')[0];
+        }, 1000);
+
+        // --- TAB NAVIGATION ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('text-black', 'bg-nothing-accent', 'font-bold', 'shadow-sm', 'border-nothing-accent');
+                btn.classList.add('text-nothing-muted', 'border-transparent');
+            });
+            const activeBtn = document.getElementById('tab-btn-' + tabId);
+            if(activeBtn) {
+                activeBtn.classList.add('text-black', 'bg-nothing-accent', 'font-bold', 'shadow-sm', 'border-nothing-accent');
+                activeBtn.classList.remove('text-nothing-muted', 'border-transparent');
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        // --- TOAST NOTIFICATIONS ---
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // --- ASSIGNMENTS LOGIC ---
+        let assignments = JSON.parse(localStorage.getItem('study_assignments')) || [
+            { id: 1, title: 'Calculus Problem Set 4', subject: 'MATH 201', priority: 'High', date: '2026-11-15', completed: false },
+            { id: 2, title: 'Operating Systems Research Paper', subject: 'CS 302', priority: 'Normal', date: '2026-11-20', completed: false }
+        ];
+        let currentAssignmentFilter = 'all';
+
+        function saveAssignments() {
+            localStorage.setItem('study_assignments', JSON.stringify(assignments));
+            renderAssignments();
+            updateHomeSnapshot();
+        }
+
+        function addAssignment(e) {
+            e.preventDefault();
+            const titleInput = document.getElementById('assignment-title');
+            const subjectInput = document.getElementById('assignment-subject');
+            const priorityInput = document.getElementById('assignment-priority');
+            const dateInput = document.getElementById('assignment-date');
+            
+            if(!titleInput.value.trim()) return;
+
+            assignments.push({
+                id: Date.now(),
+                title: titleInput.value.trim(),
+                subject: subjectInput.value.trim() || 'GENERAL',
+                priority: priorityInput.value,
+                date: dateInput.value,
+                completed: false
+            });
+
+            titleInput.value = '';
+            subjectInput.value = '';
+            dateInput.value = '';
+            saveAssignments();
+            showToast('Assignment added successfully.');
+        }
+
+        function toggleAssignmentStatus(id) {
+            assignments = assignments.map(a => a.id === id ? {...a, completed: !a.completed} : a);
+            saveAssignments();
+        }
+
+        function deleteAssignment(id) {
+            assignments = assignments.filter(a => a.id !== id);
+            saveAssignments();
+            showToast('Assignment deleted.');
+        }
+
+        function filterAssignments(filter) {
+            currentAssignmentFilter = filter;
+            ['all', 'pending', 'completed'].forEach(f => {
+                const btn = document.getElementById('filter-' + f);
+                if(f === filter) {
+                    btn.className = 'px-3 py-1 text-xs border border-nothing-accent text-black bg-nothing-accent font-bold uppercase';
+                } else {
+                    btn.className = 'px-3 py-1 text-xs border nothing-border text-nothing-muted uppercase hover:bg-nothing-cardMuted';
+                }
+            });
+            renderAssignments();
+        }
+
+        function renderAssignments() {
+            const container = document.getElementById('assignments-list');
+            let filtered = assignments;
+            if(currentAssignmentFilter === 'pending') filtered = assignments.filter(a => !a.completed);
+            if(currentAssignmentFilter === 'completed') filtered = assignments.filter(a => a.completed);
+
+            if(filtered.length === 0) {
+                container.innerHTML = `<div class="p-6 text-center text-xs text-nothing-muted border nothing-border bg-nothing-cardMuted">No assignments found matching filter.</div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(a => `
+                <div class="border nothing-border bg-nothing-bg p-4 flex items-center justify-between gap-4 shadow-sm hover:border-nothing-accent transition-all">
+                    <div class="flex items-center space-x-3 flex-1">
+                        <input type="checkbox" ${a.completed ? 'checked' : ''} onclick="toggleAssignmentStatus(${a.id})"
+                            class="w-4 h-4 accent-nothing-accent border nothing-border cursor-pointer">
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-[10px] bg-nothing-cardMuted px-2 py-0.5 border border-nothing-border font-bold text-nothing-accent">${escapeHTML(a.subject)}</span>
+                                <span class="text-[10px] ${a.priority === 'High' ? 'text-red-400 bg-red-950/40 border border-red-900' : 'text-nothing-muted'} px-1.5 py-0.5">${a.priority} Priority</span>
+                            </div>
+                            <p class="text-xs text-nothing-text font-bold mt-1 ${a.completed ? 'line-through text-nothing-muted' : ''}">${escapeHTML(a.title)}</p>
+                            <p class="text-[10px] text-nothing-muted mt-0.5"><i class="fa-regular fa-clock mr-1"></i>Due: ${a.date || 'No Date'}</p>
+                        </div>
+                    </div>
+                    <button onclick="deleteAssignment(${a.id})" class="text-nothing-muted hover:text-red-400 text-xs px-2 py-1">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // --- CALENDAR EVENTS LOGIC ---
+        let localEvents = JSON.parse(localStorage.getItem('study_events')) || [
+            { id: 1, title: 'Physics Quiz Study Sync', time: '14:00' },
+            { id: 2, title: 'Group Project Huddle', time: '16:30' }
+        ];
+
+        function addCalendarEvent(e) {
+            e.preventDefault();
+            const title = document.getElementById('event-title').value;
+            const time = document.getElementById('event-time').value;
+            if(!title) return;
+
+            localEvents.push({ id: Date.now(), title, time });
+            localStorage.setItem('study_events', JSON.stringify(localEvents));
+            document.getElementById('event-title').value = '';
+            document.getElementById('event-time').value = '';
+            renderEvents();
+            showToast('Event added to schedule.');
+        }
+
+        function deleteEvent(id) {
+            localEvents = localEvents.filter(ev => ev.id !== id);
+            localStorage.setItem('study_events', JSON.stringify(localEvents));
+            renderEvents();
+        }
+
+        function renderEvents() {
+            const list = document.getElementById('events-list');
+            if(localEvents.length === 0) {
+                list.innerHTML = `<p class="text-[11px] text-nothing-muted italic">No schedule events today.</p>`;
+                return;
+            }
+            list.innerHTML = localEvents.map(ev => `
+                <div class="bg-nothing-bg p-2 border nothing-border flex justify-between items-center">
+                    <div>
+                        <p class="text-xs font-bold text-nothing-text">${escapeHTML(ev.title)}</p>
+                        <p class="text-[10px] text-nothing-muted">${ev.time}</p>
+                    </div>
+                    <button onclick="deleteEvent(${ev.id})" class="text-nothing-muted hover:text-red-400 text-[10px]">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
+                </div>
+            `).join('');
+            document.getElementById('dash-stat-events').innerText = localEvents.length;
+        }
+
+        // --- NOTES LOGIC ---
+        let notes = JSON.parse(localStorage.getItem('study_notes')) || [
+            { id: 1, title: 'Algorithm Complexity Notes', body: 'Big O notation classifies algorithms according to how their running time or space requirements grow as the input size grows.', updatedAt: '2026-11-01' }
+        ];
+        let activeNoteId = notes.length > 0 ? notes[0].id : null;
+
+        function saveNotes() {
+            localStorage.setItem('study_notes', JSON.stringify(notes));
+            renderNotesSidebar();
+            updateHomeSnapshot();
+        }
+
+        function renderNotesSidebar() {
+            const sidebar = document.getElementById('notes-sidebar-items');
+            const search = (document.getElementById('note-search')?.value || '').toLowerCase();
+            const filteredNotes = notes.filter(n => n.title.toLowerCase().includes(search) || n.body.toLowerCase().includes(search));
+
+            if(filteredNotes.length === 0) {
+                sidebar.innerHTML = `<p class="text-xs text-nothing-muted italic p-2">No notes found.</p>`;
+                return;
+            }
+
+            sidebar.innerHTML = filteredNotes.map(n => `
+                <div onclick="selectNote(${n.id})" class="p-3 border cursor-pointer transition-all ${n.id === activeNoteId ? 'border-nothing-accent bg-nothing-softMint font-bold shadow-sm' : 'nothing-border bg-nothing-card hover:border-nothing-border' } rounded">
+                    <p class="text-xs text-nothing-text truncate">${escapeHTML(n.title || 'Untitled Note')}</p>
+                    <p class="text-[10px] text-nothing-muted truncate mt-1">${escapeHTML(n.body || 'Empty note...')}</p>
+                </div>
+            `).join('');
+
+            const active = notes.find(n => n.id === activeNoteId);
+            if(active) {
+                document.getElementById('note-title-input').value = active.title;
+                document.getElementById('note-body-input').value = active.body;
+            }
+        }
+
+        function selectNote(id) {
+            activeNoteId = id;
+            renderNotesSidebar();
+        }
+
+        function createNewNote() {
+            const newNote = {
+                id: Date.now(),
+                title: 'New Study Note',
+                body: '',
+                updatedAt: new Date().toISOString().split('T')[0]
+            };
+            notes.unshift(newNote);
+            activeNoteId = newNote.id;
+            saveNotes();
+            showToast('New note created.');
+        }
+
+        function autoSaveCurrentNote() {
+            if(!activeNoteId) return;
+            const title = document.getElementById('note-title-input').value;
+            const body = document.getElementById('note-body-input').value;
+
+            notes = notes.map(n => n.id === activeNoteId ? {...n, title, body, updatedAt: new Date().toISOString().split('T')[0]} : n);
+            localStorage.setItem('study_notes', JSON.stringify(notes));
+            renderNotesSidebar();
+            document.getElementById('note-save-status').innerText = 'Auto-saved at ' + new Date().toTimeString().split(' ')[0];
+        }
+
+        function deleteCurrentNote() {
+            if(!activeNoteId) return;
+            notes = notes.filter(n => n.id !== activeNoteId);
+            activeNoteId = notes.length > 0 ? notes[0].id : null;
+            saveNotes();
+            showToast('Note deleted.');
+        }
+
+        // --- CLOUD STUDY FILES LOGIC ---
+        let cloudFiles = JSON.parse(localStorage.getItem('study_cloud_files')) || [
+            { id: 1, name: 'Physics_101_Lecture_Slides.pdf', size: '2.4 MB', date: '2026-11-05', type: 'PDF', driveUrl: null, destination: 'Local Cache' },
+            { id: 2, name: 'Data_Structures_Cheatsheet.docx', size: '1.1 MB', date: '2026-11-08', type: 'DOCX', driveUrl: null, destination: 'Local Cache' }
+        ];
+
+        let gdriveTokenClient = null;
+        let gdriveAccessToken = localStorage.getItem('gdrive_access_token') || null;
+
+        function saveCloudFiles() {
+            localStorage.setItem('study_cloud_files', JSON.stringify(cloudFiles));
+            renderCloudFiles();
+            updateHomeSnapshot();
+        }
+
+        function openGDriveConfigModal() {
+            document.getElementById('gdrive-client-id-input').value = localStorage.getItem('gdrive_custom_client_id') || '';
+            document.getElementById('gdrive-config-modal').classList.remove('hidden');
+        }
+
+        function closeGDriveConfigModal() {
+            document.getElementById('gdrive-config-modal').classList.add('hidden');
+        }
+
+        function saveGDriveConfig() {
+            const val = document.getElementById('gdrive-client-id-input').value.trim();
+            if (val) {
+                localStorage.setItem('gdrive_custom_client_id', val);
+            } else {
+                localStorage.removeItem('gdrive_custom_client_id');
+            }
+            closeGDriveConfigModal();
+            showToast('Google Drive client settings saved.');
+        }
+
+        function connectGoogleDrive() {
+            const clientId = localStorage.getItem('gdrive_custom_client_id');
+            
+            if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+                showToast('Google Identity SDK loading... please try again in a moment.');
+                return;
+            }
+
+            if (!clientId) {
+                // Prompt user to enter Google Cloud Client ID for OAuth or open config
+                const userInput = prompt("Enter your Google Cloud Client ID (from Google API Console) to link direct uploads to your personal Google Drive:\n\nLeave blank to open API Settings modal.", "");
+                if (userInput && userInput.trim()) {
+                    localStorage.setItem('gdrive_custom_client_id', userInput.trim());
+                } else {
+                    openGDriveConfigModal();
+                    return;
+                }
+            }
+
+            try {
+                gdriveTokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: localStorage.getItem('gdrive_custom_client_id'),
+                    scope: 'https://www.googleapis.com/auth/drive.file',
+                    callback: (response) => {
+                        if (response.access_token) {
+                            gdriveAccessToken = response.access_token;
+                            localStorage.setItem('gdrive_access_token', gdriveAccessToken);
+                            updateGDriveStatusUI(true);
+                            showToast('Connected to Google Drive successfully!');
+                        } else {
+                            showToast('Failed to authenticate with Google Drive.');
+                        }
+                    },
+                });
+
+                gdriveTokenClient.requestAccessToken();
+            } catch (err) {
+                console.error("Google OAuth Error:", err);
+                showToast('OAuth Error: Invalid Google Client ID.');
+            }
+        }
+
+        function updateGDriveStatusUI(isConnected) {
+            const dot = document.getElementById('gdrive-status-dot');
+            const title = document.getElementById('gdrive-status-title');
+            const desc = document.getElementById('gdrive-status-desc');
+            const btnText = document.getElementById('gdrive-btn-text');
+
+            if (isConnected) {
+                dot.className = 'w-3 h-3 bg-nothing-accent rounded-full animate-pulse';
+                title.innerText = 'Google Drive Connected';
+                desc.innerText = 'All uploaded study files will sync directly to your personal Google Drive.';
+                btnText.innerText = 'Connected';
+            } else {
+                dot.className = 'w-3 h-3 bg-yellow-500 rounded-full';
+                title.innerText = 'Google Drive Unlinked';
+                desc.innerText = 'Files are currently stored in local browser cache. Connect Google Drive to sync across devices.';
+                btnText.innerText = 'Connect Google Drive';
+            }
+        }
+
+        async function uploadFileToGoogleDrive(file) {
+            if (!gdriveAccessToken) return null;
+
+            const metadata = {
+                name: file.name,
+                mimeType: file.type || 'application/octet-stream'
+            };
+
+            const formData = new FormData();
+            formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+            formData.append('file', file);
+
+            try {
+                const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${gdriveAccessToken}`
+                    },
+                    body: formData
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    return `https://drive.google.com/file/d/${data.id}/view`;
+                } else if (res.status === 401) {
+                    // Token expired
+                    gdriveAccessToken = null;
+                    localStorage.removeItem('gdrive_access_token');
+                    updateGDriveStatusUI(false);
+                    showToast('Google session expired. Please reconnect Google Drive.');
+                }
+            } catch (err) {
+                console.error('Google Drive Upload Failed:', err);
+            }
+            return null;
+        }
+
+        async function handleFileUpload(fileList) {
+            for (const file of Array.from(fileList)) {
+                const ext = file.name.split('.').pop().toUpperCase();
+                let driveUrl = null;
+                let destination = 'Local Cache';
+
+                if (gdriveAccessToken) {
+                    showToast(`Uploading ${file.name} to Google Drive...`);
+                    driveUrl = await uploadFileToGoogleDrive(file);
+                    if (driveUrl) {
+                        destination = 'Google Drive';
+                    }
+                }
+
+                const newFile = {
+                    id: Date.now() + Math.random(),
+                    name: file.name,
+                    size: (file.size / (1024*1024)).toFixed(2) + ' MB',
+                    date: new Date().toISOString().split('T')[0],
+                    type: ext || 'FILE',
+                    driveUrl: driveUrl,
+                    destination: destination
+                };
+                cloudFiles.unshift(newFile);
+            }
+            saveCloudFiles();
+            showToast('Upload completed!');
+        }
+
+        function deleteCloudFile(id) {
+            cloudFiles = cloudFiles.filter(f => f.id !== id);
+            saveCloudFiles();
+            showToast('File removed from list.');
+        }
+
+        function renderCloudFiles() {
+            const tbody = document.getElementById('cloud-files-tbody');
+            if(cloudFiles.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-nothing-muted italic">No study files in repository.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = cloudFiles.map(f => `
+                <tr class="hover:bg-nothing-cardMuted transition-colors">
+                    <td class="p-3 font-bold text-nothing-text flex items-center space-x-2">
+                        <i class="fa-regular fa-file-pdf text-nothing-accent"></i>
+                        <span>${escapeHTML(f.name)}</span>
+                    </td>
+                    <td class="p-3 text-nothing-muted">${f.size}</td>
+                    <td class="p-3 text-nothing-muted">${f.date}</td>
+                    <td class="p-3">
+                        <span class="inline-flex items-center space-x-1.5 text-[10px] ${f.driveUrl ? 'bg-nothing-softMint text-nothing-accent' : 'bg-yellow-950/40 text-yellow-400'} border border-nothing-border px-2 py-0.5 rounded-full font-bold">
+                            <span class="w-1.5 h-1.5 ${f.driveUrl ? 'bg-nothing-accent' : 'bg-yellow-400'} rounded-full"></span>
+                            <span>${f.destination || 'Local Cache'}</span>
+                        </span>
+                    </td>
+                    <td class="p-3 text-right space-x-2">
+                        ${f.driveUrl ? `
+                            <a href="${f.driveUrl}" target="_blank" rel="noopener noreferrer" class="text-nothing-accent hover:underline text-xs" title="Open in Google Drive">
+                                <i class="fa-solid fa-external-link"></i>
+                            </a>
+                        ` : ''}
+                        <button onclick="deleteCloudFile(${f.id})" class="text-nothing-muted hover:text-red-400 p-1">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // --- DASHBOARD SNAPSHOT UPDATER ---
+        function updateHomeSnapshot() {
+            const pendingTasks = assignments.filter(a => !a.completed);
+            document.getElementById('dash-stat-tasks').innerText = pendingTasks.length;
+            document.getElementById('dash-stat-notes').innerText = notes.length;
+            document.getElementById('dash-stat-files').innerText = cloudFiles.length;
+
+            // Tasks snapshot
+            const dashTaskList = document.getElementById('dash-task-list');
+            if(pendingTasks.length === 0) {
+                dashTaskList.innerHTML = `<p class="italic text-nothing-muted">All assignments complete!</p>`;
+            } else {
+                dashTaskList.innerHTML = pendingTasks.slice(0, 3).map(a => `
+                    <div class="flex justify-between items-center text-xs text-nothing-text">
+                        <span class="truncate">• ${escapeHTML(a.title)}</span>
+                        <span class="text-[10px] text-nothing-accent font-bold">${a.date || ''}</span>
+                    </div>
+                `).join('');
+            }
+
+            // Note snapshot
+            const dashNote = document.getElementById('dash-recent-note');
+            if(notes.length > 0) {
+                dashNote.innerHTML = `
+                    <p class="font-bold text-nothing-text">${escapeHTML(notes[0].title)}</p>
+                    <p class="truncate mt-1 text-nothing-muted text-[11px]">${escapeHTML(notes[0].body || 'Empty body...')}</p>
+                `;
+            } else {
+                dashNote.innerHTML = `<p class="italic">No notes created yet.</p>`;
+            }
+
+            // Files snapshot
+            const dashFiles = document.getElementById('dash-recent-files');
+            if(cloudFiles.length > 0) {
+                dashFiles.innerHTML = cloudFiles.slice(0, 2).map(f => `
+                    <div class="flex justify-between items-center text-xs text-nothing-text">
+                        <span class="truncate"><i class="fa-regular fa-file text-nothing-accent mr-1"></i>${escapeHTML(f.name)}</span>
+                        <span class="text-[10px] text-nothing-muted">${f.size}</span>
+                    </div>
+                `).join('');
+            } else {
+                dashFiles.innerHTML = `<p class="italic">Vault empty.</p>`;
+            }
+        }
+
+        function escapeHTML(str) {
+            return (str || '').replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+
+        function updateCalendarEmbed() {
+            const url = prompt("Enter your public Google Calendar Embed URL:", document.getElementById('google-calendar-iframe').src);
+            if(url) {
+                document.getElementById('google-calendar-iframe').src = url;
+                showToast('Calendar view updated.');
+            }
+        }
+
+        // --- GEMINI EMBEDDED POPUP CHAT LOGIC ---
+        let geminiHistory = [];
+        let isGeminiThinking = false;
+
+        function toggleGeminiPopup() {
+            const popup = document.getElementById('gemini-popup-window');
+            popup.classList.toggle('hidden');
+            if (!popup.classList.contains('hidden')) {
+                document.getElementById('gemini-user-input').focus();
+            }
+        }
+
+        function clearGeminiChat() {
+            geminiHistory = [];
+            const container = document.getElementById('gemini-chat-messages');
+            container.innerHTML = `
+                <div class="bg-nothing-softMint border border-nothing-border p-3 rounded-lg text-nothing-text">
+                    <p class="font-bold text-nothing-accent mb-1">[GEMINI AI]</p>
+                    <p>Chat reset. How can I help you today, Royze?</p>
+                </div>
+            `;
+            showToast('Gemini chat cleared.');
+        }
+
+        async function sendGeminiMessage(e) {
+            e.preventDefault();
+            if (isGeminiThinking) return;
+
+            const inputEl = document.getElementById('gemini-user-input');
+            const userText = inputEl.value.trim();
+            if (!userText) return;
+
+            inputEl.value = '';
+            appendChatMessage('user', userText);
+
+            // Add user turn to conversation history
+            geminiHistory.push({ role: 'user', parts: [{ text: userText }] });
+
+            isGeminiThinking = true;
+            const sendBtn = document.getElementById('gemini-send-btn');
+            sendBtn.disabled = true;
+            sendBtn.classList.add('opacity-50');
+
+            // Show typing indicator
+            const loadingId = 'gemini-loading-' + Date.now();
+            appendLoadingIndicator(loadingId);
+
+            try {
+                const systemPrompt = "You are Gemini, an intelligent, concise, and helpful study assistant embedded inside Royze's Study Dashboard. Help Royze with assignments, study topics, code, math formulas, and summaries. Format responses clearly.";
+                const apiKey = ""; // Built-in API runtime
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+                const payload = {
+                    contents: geminiHistory,
+                    systemInstruction: { parts: [{ text: systemPrompt }] }
+                };
+
+                const res = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) {
+                    throw new Error(`API error HTTP ${res.status}`);
+                }
+
+                const data = await res.json();
+                removeLoadingIndicator(loadingId);
+
+                const botReply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't process that response.";
+                
+                // Save model response to conversation history
+                geminiHistory.push({ role: 'model', parts: [{ text: botReply }] });
+                
+                appendChatMessage('model', botReply);
+
+            } catch (err) {
+                console.error("Gemini request error:", err);
+                removeLoadingIndicator(loadingId);
+                appendChatMessage('model', '⚠️ Unable to reach Gemini right now. Please check your connection and try again.');
+            } finally {
+                isGeminiThinking = false;
+                sendBtn.disabled = false;
+                sendBtn.classList.remove('opacity-50');
+            }
+        }
+
+        function appendChatMessage(sender, text) {
+            const container = document.getElementById('gemini-chat-messages');
+            const msgDiv = document.createElement('div');
+            
+            if (sender === 'user') {
+                msgDiv.className = 'bg-nothing-cardMuted border border-nothing-border p-3 rounded-lg text-nothing-text ml-6';
+                msgDiv.innerHTML = `<p class="font-bold text-nothing-muted text-[10px] uppercase mb-1">[ROYZE]</p><p class="whitespace-pre-wrap">${escapeHTML(text)}</p>`;
+            } else {
+                msgDiv.className = 'bg-nothing-softMint border border-nothing-border p-3 rounded-lg text-nothing-text mr-6';
+                msgDiv.innerHTML = `<p class="font-bold text-nothing-accent text-[10px] uppercase mb-1">[GEMINI AI]</p><div class="leading-relaxed">${formatMarkdown(text)}</div>`;
+            }
+
+            container.appendChild(msgDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function appendLoadingIndicator(id) {
+            const container = document.getElementById('gemini-chat-messages');
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = id;
+            loadingDiv.className = 'bg-nothing-softMint border border-nothing-border p-3 rounded-lg text-nothing-text mr-6 flex items-center space-x-2';
+            loadingDiv.innerHTML = `
+                <span class="w-2 h-2 bg-nothing-accent rounded-full animate-ping"></span>
+                <span class="text-nothing-muted text-xs font-mono">Gemini is thinking...</span>
+            `;
+            container.appendChild(loadingDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function removeLoadingIndicator(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        function formatMarkdown(text) {
+            let html = escapeHTML(text);
+            // Bold formatting
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong class="text-nothing-accent font-bold">$1</strong>');
+            // Code snippet formatting
+            html = html.replace(/`([^`]+)`/g, '<code class="bg-nothing-bg px-1.5 py-0.5 border nothing-border text-nothing-accent rounded">$1</code>');
+            // Newlines to break tags
+            html = html.replace(/\n/g, '<br>');
+            return html;
+        }
+
+        // --- INIT ---
+        window.onload = function() {
+            renderAssignments();
+            renderEvents();
+            renderNotesSidebar();
+            renderCloudFiles();
+            updateHomeSnapshot();
+            if (gdriveAccessToken) {
+                updateGDriveStatusUI(true);
+            }
+        }
+    </script>
+</body>
+</html>
